@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLINE ARCHIVE</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#f4f2ee;color:#111;font-family:Arial,sans-serif;overflow-y:auto;min-height:100vh}
+  #intro{position:fixed;inset:0;background:#f4f2ee;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:opacity .6s;cursor:pointer}
+  #intro.hide{opacity:0;pointer-events:none}
+  .circle{width:170px;height:170px;border-radius:50%;position:relative;border:2px solid #111;background:#111;overflow:hidden}
+  .circle::before{content:'';position:absolute;inset:0;border-radius:50%;background-image:url('https://images.weserv.nl/?url=files.catbox.moe/pob4k4.jpg&w=600&q=95');background-position:center;background-size:cover;background-repeat:no-repeat;animation:spin 6s linear infinite}
+  #intro h1{font-family:Georgia,serif;font-style:italic;font-size:52px;margin-top:22px;font-weight:400}
+  #intro p{letter-spacing:4px;font-size:12px;color:#555;margin-top:10px}
+  #intro .by{letter-spacing:3px;font-size:11px;color:#888;margin-top:18px}
+  #intro .by i{font-family:Georgia,serif;font-size:18px;color:#111}
+  .tiktok{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:8px 16px;border:1px solid #ddd;border-radius:30px;background:#fff;font-size:13px;color:#111;text-decoration:none;font-weight:bold;letter-spacing:1px;cursor:pointer}
+  .tiktok svg{width:18px;height:18px;flex-shrink:0}
+  .top{padding:18px 24px 8px;display:flex;justify-content:space-between;position:relative;z-index:2}
+  .logo{font-weight:900}
+  .sub{font-size:11px;letter-spacing:3px;color:#888;margin-top:5px}
+  .timer{font-family:monospace}
+  .big-num{position:absolute;right:14px;top:-10px;font-family:Georgia,serif;font-style:italic;font-size:110px;color:#111;opacity:.07;line-height:1;z-index:1;pointer-events:none}
+  #canvas{width:100%;height:340px;display:block;margin-top:20px}
+  .line{display:flex;justify-content:space-between;align-items:center;position:relative;padding:0 24px;font-family:monospace;font-size:11px;letter-spacing:2px;color:#555;margin-top:10px}
+  .line span:nth-child(2){position:absolute;left:50%;transform:translateX(-50%)}
+  .line .right{text-align:right}
+  .lyric{padding:4px 24px 160px;min-height:110px}
+  .lyric h1{font-size:22px;line-height:1.15;font-weight:900;margin-bottom:2px}
+  .lyric h1.dim{opacity:.38}
+  .lyric h1.mid{opacity:.68}
+  .cursor{display:inline-block;width:3px;height:1em;background:#111;margin-left:2px;vertical-align:-2px;animation:blink .7s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .player{position:fixed;bottom:14px;left:14px;right:14px;background:#fff;border:1px solid #111;border-radius:40px;padding:8px 14px;display:flex;align-items:center;gap:12px;z-index:10}
+  .cd{width:44px;height:44px;border-radius:50%;border:2px solid #111;background-image:url('https://images.weserv.nl/?url=files.catbox.moe/pob4k4.jpg&w=300&q=95');background-position:center;background-size:cover;background-repeat:no-repeat;flex-shrink:0;background-color:#111}
+  .cd.spin{animation:spin 2.5s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .song b{font-size:14px}
+  .song small{display:block;color:#777;font-size:11px;letter-spacing:1px;margin-top:2px}
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="circle" id="tapPlay"></div>
+  <h1>Monokrom</h1>
+  <p>TULUS &nbsp;•&nbsp; TAP TO PLAY</p>
+  <div class="by">— CREATED BY <i>Irgi</i> —</div>
+  <a class="tiktok" href="https://whatsapp.com/channel/0029Vb6qOXzJkK70J4YIY80P" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.297-.497.1-.198.05-.371-.025-.52-.074-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+    G-CRAFT
+  </a>
+</div>
+
+<div class="top">
+  <div><div class="logo">OLINE ARCHIVE</div><div class="sub">© 2026 • CREATED BY IRGI</div></div>
+  <div class="timer"><i style="color:red">●</i> <span id="time">00:00:00:00</span></div>
+  <div class="big-num" id="bigNum">01</div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="line"><span>— LINE <span id="lineNum">01</span> / 16</span><span id="clock">00:00.00</span><span class="right">FRAME <span id="frameNum">01A</span></span></div>
+
+<div class="lyric" id="lyricBox"></div>
+
+<div class="player">
+  <div class="cd" id="cd"></div>
+  <div class="song"><b>Monokrom - Tulus</b><small>TULUS</small></div>
+</div>
+
+<audio id="audio" preload="metadata" playsinline>
+  <source src="https://files.catbox.moe/f7hkli.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const audio = document.getElementById('audio');
+const intro = document.getElementById('intro');
+const cd = document.getElementById('cd');
+let playing = false;
+let songTime = 97;
+const START_SEC = 97;
+const END_SEC = 165;
+
+const LRC = [
+  [0.0, "Lembaran foto hitam putih"],
+  [4.0, "Kembali teringat malam"],
+  [8.0, "kuhitung-hitung bintang"],
+  [12.0,"Saat mataku sulit tidur"],
+  [16.0,"Suaramu buatku lelap"],
+  [24.0,"Di mana pun kalian berada"],
+  [30.0,"Kukirimkan terima kasih"],
+  [34.0,"Untuk warna dalam hidupku"],
+  [39.0,"dan banyak kenangan indah"],
+  [44.0,"Kau melukis aku"],
+  [51.0,"Kita tak pernah tahu"],
+  [54.0,"berapa lama kita diberi waktu"],
+  [62.0,"Jika aku pergi lebih dulu jangan lupakan aku"]
+];
+
+const lyricBox = document.getElementById('lyricBox');
+
+function seededRand(seed){
+  let s = seed;
+  return function(){
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+const TYPE_TIMES = LRC.map(function(line, li){
+  const text = line[1];
+  const rand = seededRand(1234 + li * 999);
+  let t = 0.15 + rand() * 0.35;
+  const times = [];
+  const dur = ((li+1 < LRC.length ? LRC[li+1][0] : 68) - line[0]);
+  const maxT = Math.max(1.2, dur - 0.6);
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    let delay = 0.03 + rand() * 0.09;
+    if(ch === ' ') delay += 0.06 + rand() * 0.12;
+    if(i > 3 && i % 7 === 0) delay += 0.12;
+    t += delay;
+    if(t > maxT) t = maxT - (text.length - i) * 0.01;
+    times.push(t);
+  }
+  return times;
+});
+
+function typedText(li, elapsedInLine){
+  const text = LRC[li][1];
+  const times = TYPE_TIMES[li];
+  let count = 0;
+  for(let i=0;i<times.length;i++){
+    if(elapsedInLine >= times[i]) count = i + 1;
+    else break;
+  }
+  return text.slice(0, count);
+}
+
+function renderLRC(elapsed){
+  let idx = -1;
+  for(let i=0;i<LRC.length;i++){ if(elapsed >= LRC[i][0]) idx = i; else break; }
+  if(idx === -1){ lyricBox.innerHTML=''; return; }
+  let startIdx = Math.max(0, idx - 2);
+  let html = '';
+  for(let i=startIdx; i<=idx; i++){
+    let inLine = elapsed - LRC[i][0];
+    let isTyping = (i === idx);
+    let txt = isTyping ? typedText(i, inLine) : LRC[i][1];
+    let cls = i === idx ? '' : (i === idx - 1 ? 'mid' : 'dim');
+    let cursor = isTyping && txt.length < LRC[i][1].length ? '<span class="cursor"></span>' : '';
+    html += '<h1 class="'+cls+'">'+txt+cursor+'</h1>';
+  }
+  lyricBox.innerHTML = html;
+}
+
+function startPlay(){
+  if(playing) return;
+  playing = true;
+  intro.classList.add('hide');
+  cd.classList.add('spin');
+  audio.volume = 1;
+  audio.load();
+  function playNow(){
+    try{ audio.currentTime = START_SEC; }catch(e){}
+    songTime = START_SEC;
+    photoIndex = 1; photoTimer = 0; currentOffset = START_OFFSET; slideClock = 0; updateCounter();
+    audio.play().catch(function(e){ console.log(e); });
+  }
+  if(audio.readyState >= 1){
+    playNow();
+  } else {
+    audio.addEventListener('loadedmetadata', playNow, {once:true});
+    setTimeout(function(){ if(!audio.paused) return; playNow(); }, 2500);
+  }
+}
+intro.addEventListener('click', function(e){
+  if(e.target.closest('a')) return;
+  startPlay();
+});
+document.getElementById('tapPlay').addEventListener('click', function(e){
+  e.stopPropagation();
+  startPlay();
+});
+
+function pad(n){ return String(n).padStart(2,'0'); }
+setInterval(function(){
+  let t = (audio.currentTime && audio.currentTime > 0) ? audio.currentTime : songTime;
+  if(playing && t >= END_SEC){
+    audio.pause();
+    playing = false;
+    cd.classList.remove('spin');
+    intro.classList.remove('hide');
+    t = END_SEC;
+  }
+  let clipT = t - START_SEC;
+  if(clipT < 0) clipT = 0;
+  if(clipT > 68) clipT = 68;
+  let m = Math.floor(clipT/60);
+  let sec = Math.floor(clipT%60);
+  let frame = Math.floor((clipT%1)*24);
+  document.getElementById('time').textContent = '00:'+pad(m)+':'+pad(sec)+':'+pad(frame);
+  document.getElementById('clock').textContent = pad(m)+':'+pad(sec)+'.'+pad(frame);
+  if(playing) renderLRC(clipT);
+}, 42);
+
+const canvas = document.getElementById('canvas');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, .1, 100);
+const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+renderer.setPixelRatio(1);
+
+function resize(){
+  const w = canvas.clientWidth || window.innerWidth;
+  const h = 340;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.position.set(0, 0, Math.max(4.2, 4.2 * (420 / w)));
+  camera.lookAt(0,0,0);
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
+
+const PHOTOS = [
+  "k2k10c.jpeg","altr2z.jpeg","fxxhkl.jpeg","ksxbsc.jpeg","9r1k27.jpeg",
+  "ynbuqb.jpeg","sgjnfk.jpeg","dza2tx.jpeg","ue4svl.jpeg","92iifg.jpeg",
+  "dxv5qa.jpeg","j9kcgc.jpeg","47oh2l.jpeg","i0o1yq.jpeg","obtt15.jpeg","6p5tco.jpeg"
+];
+const TOTAL = 16;
+const loadedImgs = new Array(TOTAL).fill(null);
+
+const filmCanvas = document.createElement('canvas');
+filmCanvas.width = 7328; filmCanvas.height = 512;
+const fx = filmCanvas.getContext('2d');
+fx.imageSmoothingEnabled = true;
+fx.imageSmoothingQuality = 'high';
+
+function drawFilm(){
+  fx.fillStyle = '#0a0a0a'; fx.fillRect(0,0,7328,512);
+  fx.fillStyle = '#fff';
+  for(let i=0;i<141;i++){ fx.fillRect(20+i*52,30,28,24); fx.fillRect(20+i*52,458,28,24); }
+  for(let slot=0; slot<TOTAL+2; slot++){
+    let photoIdx;
+    if(slot === 0) photoIdx = TOTAL-1;
+    else if(slot === TOTAL+1) photoIdx = 0;
+    else photoIdx = slot-1;
+    const x0 = 30 + slot*400;
+    const fw=360, fh=320;
+    const img = loadedImgs[photoIdx];
+    if(img){
+      const scale = Math.max(fw/img.width, fh/img.height);
+      const dw = img.width*scale, dh = img.height*scale;
+      const dx = x0 + (fw-dw)/2;
+      const dy = 96 + (fh-dh)/2;
+      fx.save();
+      fx.beginPath(); fx.rect(x0,96,fw,fh); fx.clip();
+      fx.drawImage(img, dx, dy, dw, dh);
+      fx.restore();
+    } else {
+      fx.fillStyle = '#1a1a1a'; fx.fillRect(x0,96,fw,fh);
+      fx.fillStyle = '#fff'; fx.font='900 90px Arial'; fx.textAlign='center';
+      fx.fillText(pad(photoIdx+1), x0+180, 290);
+    }
+    fx.strokeStyle='#ffffff'; fx.lineWidth=4; fx.strokeRect(x0,96,fw,fh);
+  }
+  if(window._filmTex) window._filmTex.needsUpdate = true;
+}
+
+drawFilm();
+
+function loadOne(i){
+  const urls = [
+    'https://images.weserv.nl/?url=files.catbox.moe/'+PHOTOS[i]+'&w=900&q=95',
+    'https://files.catbox.moe/'+PHOTOS[i]
+  ];
+  let idx = 0;
+  function tryUrl(){
+    if(idx >= urls.length) return;
+    const im = new Image();
+    im.crossOrigin = "anonymous";
+    im.onload = function(){ loadedImgs[i] = im; drawFilm(); };
+    im.onerror = function(){ idx++; tryUrl(); };
+    im.src = urls[idx];
+  }
+  tryUrl();
+}
+for(let i=0;i<TOTAL;i++) loadOne(i);
+
+const tex = new THREE.CanvasTexture(filmCanvas);
+tex.wrapS = THREE.ClampToEdgeWrapping;
+tex.minFilter = THREE.LinearFilter;
+tex.magFilter = THREE.LinearFilter;
+tex.generateMipmaps = false;
+tex.anisotropy = 1;
+window._filmTex = tex;
+
+const geo = new THREE.PlaneGeometry(13.5,2.4,80,8);
+
+const U_SCALE = 4096 / 7328;
+const mat = new THREE.ShaderMaterial({
+  uniforms: { map: { value: tex }, uOffset: { value: -0.196 }, uScale: { value: U_SCALE } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+  fragmentShader: 'uniform sampler2D map; uniform float uOffset; uniform float uScale; varying vec2 vUv; void main(){ vec4 color = texture2D(map, vec2(uOffset + vUv.x * uScale, vUv.y)); float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114)); float distU = abs(vUv.x - 0.5); float mono = smoothstep(0.032, 0.046, distU); vec3 finalColor = mix(color.rgb, vec3(gray), mono); gl_FragColor = vec4(finalColor, color.a); }',
+  side: THREE.DoubleSide
+});
+
+const film = new THREE.Mesh(geo, mat);
+film.position.y = -0.2;
+film.rotation.x = -0.08;
+scene.add(film);
+
+const basePos = [];
+for(let i=0;i<geo.attributes.position.count;i++){
+  basePos.push({x: geo.attributes.position.getX(i), y: geo.attributes.position.getY(i)});
+}
+
+const SLIDE_TIME = 0.9;
+const STEP = 400 / 7328;
+const START_OFFSET = -0.196;
+const PHOTO_TIME = 4;
+
+let t = 0;
+let slideClock = 0;
+let currentOffset = START_OFFSET;
+let photoIndex = 1;
+let photoTimer = 0;
+let lastTime = performance.now();
+
+function smooth(p){ return p*p*(3-2*p); }
+function updateCounter(){
+  let txt = pad(photoIndex);
+  document.getElementById('lineNum').textContent = txt;
+  document.getElementById('frameNum').textContent = txt + 'A';
+  document.getElementById('bigNum').textContent = txt;
+}
+updateCounter();
+
+function animate(){
+  requestAnimationFrame(animate);
+  let now = performance.now();
+  let dt = (now - lastTime) / 1000;
+  lastTime = now;
+  if(dt > 0.05) dt = 0.05;
+  t += dt;
+  if(playing) songTime += dt;
+
+  if(playing){
+    photoTimer += dt;
+    if(photoTimer >= PHOTO_TIME){
+      photoTimer = 0;
+      if(photoIndex < TOTAL){
+        currentOffset = START_OFFSET + (photoIndex-1)*STEP;
+        photoIndex = photoIndex+1;
+        slideClock = 0;
+        updateCounter();
+      }
+    }
+  }
+
+  let targetOffset = START_OFFSET + (photoIndex-1)*STEP;
+  const isSliding = Math.abs(mat.uniforms.uOffset.value - targetOffset) > 0.0001;
+
+  if(isSliding){
+    slideClock += dt;
+    let p = Math.min(slideClock / SLIDE_TIME, 1);
+    mat.uniforms.uOffset.value = currentOffset + smooth(p)*(targetOffset-currentOffset);
+    if(p>=1){ currentOffset = targetOffset; slideClock = 0; }
+  } else {
+    mat.uniforms.uOffset.value = targetOffset;
+  }
+
+  const wavePower = isSliding ? Math.sin(Math.min(slideClock / SLIDE_TIME, 1) * Math.PI) : 0;
+
+  const pos = geo.attributes.position;
+  for(let i=0;i<pos.count;i++){
+    const bx = basePos[i].x;
+    const by = basePos[i].y;
+    const curveY = Math.sin(bx * 0.55 + 0.6) * 0.12 - bx * 0.03;
+    const curveZ = Math.sin(bx * 0.55) * 0.35;
+    pos.setX(i, bx);
+    pos.setY(i, by + curveY + Math.cos(bx*0.7 + t*3.5) * 0.3 * wavePower);
+    pos.setZ(i, curveZ + Math.sin(bx*0.9 + t*3.8) * 1.0 * wavePower);
+  }
+  pos.needsUpdate = true;
+  renderer.render(scene,camera);
+}
+animate();
+</script>
+</body>
+</html>
